@@ -18,13 +18,13 @@
 ## Для запуска в виртуальном окружении используйте:
 * Pipenv
 
-## Устанновка с помощью setup.py:
+## Установка с помощью setup.py:
 ```bash
 $ cd "Path to setup.py"
 $ python3 setup.py install
 ```
 
-## Устанновка из пакета:
+## Установка из пакета:
 ```bash
 $ cd "Path to <package_name.whl>"
 $ python3 -m pip install <package_name.whl>
