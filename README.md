@@ -50,8 +50,8 @@ if __name__ == '__main__':
 
 ## Запуск через консоль:
 ```bash
-$ cd "Path to main.py"
-$ python3 main.py -url <url> [-nr, -u, -limit <n>, -completed, -screen, -json, -txt, -csv]
+$ cd "Path to example.py"
+$ python3 example.py -url <url> [-nr, -u, -limit <n>, -completed, -screen, -json, -txt, -csv]
 ```
 
 - **-nr** (no recursive) отменить рекурсивный поиск  
