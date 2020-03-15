@@ -37,28 +37,55 @@ class Config:
         -nr, -u, -limit <n>, -screen, -json, -txt, -csv
         """
         for key, arg in enumerate(argv):
-            if arg == '-json':
-                self.json = True
-            if arg == '-txt':
-                self.txt = True
-            if arg == '-csv':
-                self.csv = True
-            if arg == '-screen':
-                self.screen = True
-            if arg == '-limit':
-                if len(argv) >= key + 1:
-                    if argv[key + 1].isdigit():
-                        self.limit = int(argv[key + 1])
-            if arg == '-url':
-                if len(argv) >= key + 1:
-                    if not argv[key + 1].startswith('-'):
-                        self.url = argv[key + 1]
-            if arg == '-nr':
-                self.recursive = False
-            if arg == '-u':
-                self.unique = True
-            if arg == '-completed':
-                self.completed = True
+            self.check_json(arg)
+            self.check_txt(arg)
+            self.check_csv(arg)
+            self.check_screen(arg)
+            self.check_no_recursive(arg)
+            self.check_unique(arg)
+            self.check_completed(arg)
+            if len(argv) >= key + 2:
+                value = argv[key + 1]
+                self.check_limit(arg, value)
+                self.check_url(arg, value)
+
+    def check_json(self, arg: str) -> None:
+        if arg == '-json':
+            self.json = True
+
+    def check_txt(self, arg: str) -> None:
+        if arg == '-txt':
+            self.txt = True
+
+    def check_csv(self, arg: str) -> None:
+        if arg == '-csv':
+            self.csv = True
+
+    def check_screen(self, arg: str) -> None:
+        if arg == '-screen':
+            self.screen = True
+
+    def check_no_recursive(self, arg: str) -> None:
+        if arg == '-nr':
+            self.recursive = False
+
+    def check_unique(self, arg: str) -> None:
+        if arg == '-u':
+            self.unique = True
+
+    def check_completed(self, arg: str) -> None:
+        if arg == '-completed':
+            self.completed = True
+
+    def check_limit(self, arg: str, value: str):
+        if arg == '-limit':
+            if value.isdigit():
+                self.limit = int(value)
+
+    def check_url(self, arg: str, value: str):
+        if arg == '-url':
+            if not value.startswith('-'):
+                self.url = value
 
 
 Link = Tuple[str, str]
@@ -148,7 +175,6 @@ class FindLinks:
 
     def __init__(self, config: Config):
         self.url = config.url
-        # self.limit = config.limit
         self.container = LinksContainer(config)
         self.printer = LinkPrinter(self.container, config)
         self.heap = Queue()
@@ -169,7 +195,7 @@ class FindLinks:
     def get_raw_html(url: str) -> str:
         try:
             r = requests.get(url, allow_redirects=True, timeout=1)
-        except requests.exceptions.ConnectionError:
+        except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
             return ''
         if r.status_code != 200:
             return ''
@@ -199,9 +225,7 @@ class FindLinks:
         print(f'Started at {datetime.now()}')
         print(f'Finding {self.container.config.limit} links...')
         running: bool = True
-        while running:
-            if self.heap.empty():
-                break
+        while not self.heap.empty() and running:
             next_link = self.heap.get()
             url = next_link[0]
             response: str = self.get_raw_html(url)
