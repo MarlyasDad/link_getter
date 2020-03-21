@@ -11,7 +11,9 @@ class Config:
     url: str
     recursive: bool
     limit: int
+    level: int
     unique: bool
+    first_only: bool
     completed: bool
     json: bool
     txt: bool
@@ -28,13 +30,15 @@ class Config:
         self.screen = False
         self.recursive = True
         self.unique = False
+        self.first_only = False
         self.completed = False
         self.limit = 100
+        self.level = 100
         self.init_input_args(argv)
 
     def init_input_args(self, argv: list) -> None:
         """
-        -nr, -u, -limit <n>, -screen, -json, -txt, -csv
+        -url <url> [-nr, -f, -u, -completed, -limit <n>, -level <n>, -screen, -json, -txt, -csv]
         """
         for key, arg in enumerate(argv):
             self.check_json(arg)
@@ -43,10 +47,12 @@ class Config:
             self.check_screen(arg)
             self.check_no_recursive(arg)
             self.check_unique(arg)
+            self.check_first_only(arg)
             self.check_completed(arg)
             if len(argv) >= key + 2:
                 value = argv[key + 1]
                 self.check_limit(arg, value)
+                self.check_level(arg, value)
                 self.check_url(arg, value)
 
     def check_json(self, arg: str) -> None:
@@ -73,6 +79,10 @@ class Config:
         if arg == '-u':
             self.unique = True
 
+    def check_first_only(self, arg: str) -> None:
+        if arg == '-f':
+            self.first_only = True
+
     def check_completed(self, arg: str) -> None:
         if arg == '-completed':
             self.completed = True
@@ -81,6 +91,11 @@ class Config:
         if arg == '-limit':
             if value.isdigit():
                 self.limit = int(value)
+
+    def check_level(self, arg: str, value: str):
+        if arg == '-level':
+            if value.isdigit():
+                self.level = int(value)
 
     def check_url(self, arg: str, value: str):
         if arg == '-url':
@@ -221,9 +236,7 @@ class FindLinks:
             absolute_url = f'{self.url}{url}'
         return absolute_url
 
-    def find_links(self) -> None:
-        print(f'Started at {datetime.now()}')
-        print(f'Finding {self.container.config.limit} links...')
+    def find_by_levels(self):
         running: bool = True
         while not self.heap.empty() and running:
             next_link = self.heap.get()
@@ -234,12 +247,36 @@ class FindLinks:
             for link in found_links:
                 success = self.container.add_link(link)
                 # Если ссылка новая, добавить её в очередь на переход
-                if success:
+                if success and not self.container.config.first_only:
                     self.heap.put(link)
-                # Выходим если достигли лимит или все ссылки обработаны
+                # Выходим если достигли лимит
                 if self.container.config.limit <= self.container.count:
                     running = False
                     break
+
+    def find_recursive(self, url: str, level: int):
+        # Контроль уровня вложенности с помощью level
+        if self.container.config.level < level:
+            return
+        next_level = level + 1
+        response: str = self.get_raw_html(url)
+        found_links: List[Link] = self.find_all_links_from_raw_html(response)
+        for link in found_links:
+            success = self.container.add_link(link)
+            if success and not self.container.config.first_only:
+                found_url = link[0]
+                self.find_recursive(found_url, next_level)
+            if self.container.config.limit <= self.container.count:
+                return
+
+    def find_links(self) -> None:
+        print(f'Started at {datetime.now()}')
+        print(f'Finding {self.container.config.limit} links...')
+
+        if self.container.config.recursive:
+            self.find_recursive(self.url, 0)
+        else:
+            self.find_by_levels()
 
         self.printer.print()
         print(f'Finished at {datetime.now()}')
