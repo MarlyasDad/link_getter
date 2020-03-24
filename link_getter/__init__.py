@@ -1,1 +1,1 @@
-from .core import FindLinks, Config
+# from .core import FindLinks, Config

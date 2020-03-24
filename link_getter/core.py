@@ -38,7 +38,9 @@ class Config:
 
     def init_input_args(self, argv: list) -> None:
         """
-        -url <url> [-nr, -f, -u, -completed, -limit <n>, -level <n>, -screen, -json, -txt, -csv]
+        -url <url>,
+        [-nr, -f, -u, -completed, -limit <n>, -level <n>,
+         -screen, -json, -txt, -csv]
         """
         for key, arg in enumerate(argv):
             self.check_json(arg)
@@ -160,9 +162,9 @@ class LinkPrinter:
             file.write(json_text)
 
     def to_csv(self, date_string: str) -> None:
-        with open(f'links_csv_{date_string}.csv', 'w', encoding="utf-8-sig", newline='') as csvfile:
+        with open(f'links_csv_{date_string}.csv', 'w', encoding="utf-8-sig", newline='') as csvfile:  # noqa
             fieldnames = ['URL', 'Text']
-            writer = csv.writer(csvfile, dialect='excel', delimiter=';', fieldnames=fieldnames)
+            writer = csv.writer(csvfile, dialect='excel', delimiter=';', fieldnames=fieldnames)  # noqa
             for link in self.links:
                 writer.writerow([link[0], link[1]])
 
@@ -197,7 +199,7 @@ class FindLinks:
 
     def initialize_first_request(self):
         if self.url == '':
-            print('Start point is not defined. Please, restart the application with -url parameter!')
+            print('Please, restart the application with -url parameter!')
             exit()
         if not self.url.startswith('http'):
             self.url = f'http://{self.url}'
@@ -210,7 +212,7 @@ class FindLinks:
     def get_raw_html(url: str) -> str:
         try:
             r = requests.get(url, allow_redirects=True, timeout=1)
-        except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):
+        except (requests.exceptions.ConnectionError, requests.exceptions.ReadTimeout):  # noqa
             return ''
         if r.status_code != 200:
             return ''
@@ -236,14 +238,14 @@ class FindLinks:
             absolute_url = f'{self.url}{url}'
         return absolute_url
 
-    def find_by_levels(self):
+    def find_by_levels(self) -> None:
         running: bool = True
         while not self.heap.empty() and running:
             next_link = self.heap.get()
             url = next_link[0]
             response: str = self.get_raw_html(url)
-            found_links: List[Link] = self.find_all_links_from_raw_html(response)
-            # Все найденные ссылки добавляем в хранилище ссылок и в очередь на обработку
+            found_links: List[Link] = self.find_all_links_from_raw_html(response)  # noqa
+            # Все найденные ссылки добавляем в хранилище и в очередь
             for link in found_links:
                 success = self.container.add_link(link)
                 # Если ссылка новая, добавить её в очередь на переход
@@ -254,7 +256,7 @@ class FindLinks:
                     running = False
                     break
 
-    def find_recursive(self, url: str, level: int):
+    def find_recursive(self, url: str, level: int) -> None:
         # Контроль уровня вложенности с помощью level
         if self.container.config.level < level:
             return
@@ -266,6 +268,7 @@ class FindLinks:
             if success and not self.container.config.first_only:
                 found_url = link[0]
                 self.find_recursive(found_url, next_level)
+            # Выходим если достигли лимит
             if self.container.config.limit <= self.container.count:
                 return
 

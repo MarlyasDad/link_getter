@@ -9,7 +9,7 @@ os.chdir(os.path.normpath(os.path.join(os.path.abspath(__file__), os.pardir)))
 
 setup(
     name='link_getter',
-    version='0.1',
+    version='0.2',
     packages=['link_getter'],
     include_package_data=True,
     license='GNU General Public License v3.0',
